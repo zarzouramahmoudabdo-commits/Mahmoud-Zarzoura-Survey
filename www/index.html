@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mahmoud Zarzoura Survey</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f4f7;
+      color: #222;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .container {
+      padding: 15px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-top: 0;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 4px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px;
+      margin: 5px 0 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 420px;
+      background: #fafafa;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      display: block;
+    }
+
+    .status {
+      padding: 10px;
+      background: #eef2ff;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media(max-width:600px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Mahmoud Zarzoura Survey</h1>
+  <p>SDR + DXF Surveying Tool</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>📂 ملفات المساحة</h2>
+
+    <button class="primary" onclick="document.getElementById('sdrFile').click()">
+      اختيار ملف SDR
+    </button>
+
+    <button class="primary" onclick="document.getElementById('dxfFile').click()">
+      اختيار ملف DXF
+    </button>
+
+    <input id="sdrFile" type="file" accept=".sdr,.txt,.csv" hidden>
+    <input id="dxfFile" type="file" accept=".dxf" hidden>
+
+    <div id="status" class="status">
+      لم يتم تحميل أي ملفات بعد.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 ضبط المطابقة</h2>
+
+    <div class="row">
+      <div>
+        <label>ΔX</label>
+        <input id="dx" type="number" value="0" step="0.001">
+      </div>
+
+      <div>
+        <label>ΔY</label>
+        <input id="dy" type="number" value="0" step="0.001">
+      </div>
+
+      <div>
+        <label>Scale</label>
+        <input id="scale" type="number" value="1" step="0.000001">
+      </div>
+
+      <div>
+        <label>Rotation</label>
+        <input id="rotation" type="number" value="0" step="0.001">
+      </div>
+    </div>
+
+    <button class="primary" onclick="applyTransform()">
+      تطبيق المطابقة
+    </button>
+
+    <button class="secondary" onclick="fitAll()">
+      Fit All
+    </button>
+
+    <button class="secondary" onclick="clearAll()">
+      مسح
+    </button>
+  </div>
+
+  <div class="card">
+    <h2>🗺️ الخريطة</h2>
+    <canvas id="map"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>📊 البيانات</h2>
+    <div id="data"></div>
+  </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+
+let sdrPoints = [];
+let dxfPoints = [];
+
+let view = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0
+};
+
+document.getElementById("sdrFile").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function() {
+    parseSDR(reader.result);
+    document.getElementById("status").innerText =
+      "تم تحميل ملف SDR: " + file.name;
+
+    fitAll();
+  };
+
+  reader.readAsText(file);
+});
+
+document.getElementById("dxfFile").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function() {
+    parseDXF(reader.result);
+    document.getElementById("status").innerText =
+      "تم تحميل ملف DXF: " + file.name;
+
+    fitAll();
+  };
+
+  reader.readAsText(file);
+});
+
+function parseSDR(text) {
+
+  sdrPoints = [];
+
+  const lines = text.split(/\r?\n/);
+
+  for (const line of lines) {
+
+    const parts = line.trim().split(/[,\s;]+/);
+
+    const nums = parts
+      .map(Number)
+      .filter(v => Number.isFinite(v));
+
+    if (nums.length >= 3) {
+
+      const x = nums[nums.length - 2];
+      const y = nums[nums.length - 1];
+
+      sdrPoints.push({
+        x: x,
+        y: y,
+        name: parts[0]
+      });
+    }
+  }
+
+  showData();
+  draw();
+}
+
+function parseDXF(text) {
+
+  dxfPoints = [];
+
+  const lines = text.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length - 1; i++) {
+
+    if (lines[i].trim() === "10") {
+
+      const x = Number(lines[i + 1]);
+
+      let y = null;
+
+      for (let j = i + 2; j < Math.min(i + 20, lines.length - 1); j++) {
+
+        if (lines[j].trim() === "20") {
+          y = Number(lines[j + 1]);
+          break;
+        }
+      }
+
+      if (
+        Number.isFinite(x) &&
+        Number.isFinite(y)
+      ) {
+
+        dxfPoints.push({
+          x: x,
+          y: y
+        });
+      }
+    }
+  }
+
+  showData();
+  draw();
+}
+
+function transformPoint(p) {
+
+  const dx = Number(document.getElementById("dx").value) || 0;
+  const dy = Number(document.getElementById("dy").value) || 0;
+  const scale = Number(document.getElementById("scale").value) || 1;
+
+  const angle =
+    (Number(document.getElementById("rotation").value) || 0)
+    * Math.PI / 180;
+
+  let x = p.x * scale;
+  let y = p.y * scale;
+
+  const rx = x * Math.cos(angle) - y * Math.sin(angle);
+  const ry = x * Math.sin(angle) + y * Math.cos(angle);
+
+  return {
+    x: rx + dx,
+    y: ry + dy
+  };
+}
+
+function applyTransform() {
+  draw();
+}
+
+function fitAll() {
+
+  const all = [
+    ...sdrPoints,
+    ...dxfPoints.map(transformPoint)
+  ];
+
+  if (!all.length) return;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  all.forEach(p => {
+
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+
+  });
+
+  const width = maxX - minX || 1;
+  const height = maxY - minY || 1;
+
+  view.scale =
+    Math.min(
+      canvas.width / width,
+      canvas.height / height
+    ) * 0.85;
+
+  view.offsetX =
+    canvas.width / 2 - ((minX + maxX) / 2) * view.scale;
+
+  view.offsetY =
+    canvas.height / 2 + ((minY + maxY) / 2) * view.scale;
+
+  draw();
+}
+
+function worldToScreen(p) {
+
+  return {
+    x: p.x * view.scale + view.offsetX,
+    y: -p.y * view.scale + view.offsetY
+  };
+}
+
+function drawPoint(p, text) {
+
+  const s = worldToScreen(p);
+
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (text) {
+    ctx.font = "11px Arial";
+    ctx.fillText(text, s.x + 6, s.y - 6);
+  }
+}
+
+function draw() {
+
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  sdrPoints.forEach(p => {
+    drawPoint(p, p.name);
+  });
+
+  dxfPoints.forEach(p => {
+    drawPoint(transformPoint(p), "");
+  });
+}
+
+function showData() {
+
+  const data = document.getElementById("data");
+
+  data.innerHTML =
+    "<b>SDR Points:</b> " + sdrPoints.length +
+    "<br><b>DXF Points:</b> " + dxfPoints.length;
+}
+
+function clearAll() {
+
+  sdrPoints = [];
+  dxfPoints = [];
+
+  document.getElementById("data").innerHTML = "";
+  document.getElementById("status").innerText =
+    "تم مسح البيانات.";
+
+  draw();
+}
+
+window.addEventListener("resize", draw);
+
+draw();
+
+</script>
+
+</body>
+</html>

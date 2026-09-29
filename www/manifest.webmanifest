@@ -1,0 +1,10 @@
+{
+  "name": "Mahmoud Zarzoura Survey",
+  "short_name": "MZ Survey",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f2f4f7",
+  "theme_color": "#111827",
+  "orientation": "portrait",
+  "icons": []
+}
