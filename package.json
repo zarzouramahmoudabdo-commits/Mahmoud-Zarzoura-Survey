@@ -1,0 +1,26 @@
+{
+  "name": "mahmoud-zarzoura-survey",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zarzouramahmoudabdo-commits/Mahmoud-Zarzoura-Survey.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/zarzouramahmoudabdo-commits/Mahmoud-Zarzoura-Survey/issues"
+  },
+  "homepage": "https://github.com/zarzouramahmoudabdo-commits/Mahmoud-Zarzoura-Survey#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}
