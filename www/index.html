@@ -1,449 +1,670 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<link rel="manifest" href="manifest.webmanifest">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mahmoud Zarzoura Survey</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f4f7;
-      color: #222;
-    }
-
-    header {
-      background: #111827;
-      color: white;
-      padding: 18px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    header p {
-      margin: 6px 0 0;
-      color: #cbd5e1;
-      font-size: 13px;
-    }
-
-    .container {
-      padding: 15px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    }
-
-    h2 {
-      font-size: 18px;
-      margin-top: 0;
-    }
-
-    button {
-      border: 0;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin: 4px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: #2563eb;
-      color: white;
-    }
-
-    .secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    input {
-      width: 100%;
-      padding: 11px;
-      margin: 5px 0 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    canvas {
-      width: 100%;
-      height: 420px;
-      background: #fafafa;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      display: block;
-    }
-
-    .status {
-      padding: 10px;
-      background: #eef2ff;
-      border-radius: 8px;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    @media(max-width:600px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mahmoud Zarzoura Survey</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#172033}
+header{background:#0f172a;color:white;padding:18px;text-align:center}
+header h1{margin:0;font-size:22px}
+header p{margin:7px 0 0;color:#cbd5e1;font-size:13px}
+.container{max-width:1100px;margin:auto;padding:12px}
+.card{background:white;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
+h2{font-size:17px;margin:0 0 12px}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:4px}
+input,select,button{width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font-size:14px}
+button{cursor:pointer;font-weight:bold}
+.primary{background:#2563eb;color:white;border:0}
+.secondary{background:#e2e8f0;color:#172033}
+.danger{background:#dc2626;color:white;border:0}
+.success{background:#16a34a;color:white;border:0}
+.buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.status{margin-top:10px;padding:10px;border-radius:8px;background:#f8fafc;font-size:13px}
+#map{width:100%;height:480px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;touch-action:none}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}
+.tab{min-width:100px}
+.tab.active{background:#0f172a;color:white}
+.panel{display:none}
+.panel.active{display:block}
+.table-wrap{overflow:auto;max-height:420px}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{border-bottom:1px solid #e2e8f0;padding:7px;text-align:center;font-size:13px}
+th{background:#f8fafc;position:sticky;top:0}
+.small{font-size:12px;color:#64748b}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat div{background:#f8fafc;border-radius:9px;padding:10px;text-align:center}
+.stat b{display:block;font-size:18px}
+@media(max-width:700px){
+.row,.buttons,.stat{grid-template-columns:repeat(2,1fr)}
+#map{height:400px}
+}
+@media(max-width:420px){
+.row,.buttons,.stat{grid-template-columns:1fr 1fr}
+}
+</style>
 </head>
-
 <body>
 
 <header>
-  <h1>Mahmoud Zarzoura Survey</h1>
-  <p>SDR + DXF Surveying Tool</p>
+<h1>Mahmoud Zarzoura Survey</h1>
+<p>Survey • SDR • DXF • Points • CAD Map</p>
 </header>
 
 <div class="container">
 
-  <div class="card">
-    <h2>📂 ملفات المساحة</h2>
+<div class="card">
+<div class="tabs">
+<button class="tab active" onclick="tab('files',this)">📂 الملفات</button>
+<button class="tab" onclick="tab('points',this)">📍 النقاط</button>
+<button class="tab" onclick="tab('tools',this)">📐 الأدوات</button>
+</div>
 
-    <button class="primary" onclick="document.getElementById('sdrFile').click()">
-      اختيار ملف SDR
-    </button>
+<div id="files" class="panel active">
+<h2>ملفات المساحة</h2>
 
-    <button class="primary" onclick="document.getElementById('dxfFile').click()">
-      اختيار ملف DXF
-    </button>
+<div class="buttons">
+<button class="primary" onclick="document.getElementById('sdrFile').click()">اختيار SDR</button>
+<button class="primary" onclick="document.getElementById('dxfFile').click()">اختيار DXF</button>
+<button class="secondary" onclick="exportPoints()">تصدير النقاط</button>
+<button class="secondary" onclick="fitAll()">Fit All</button>
+</div>
 
-    <input id="sdrFile" type="file" accept=".sdr,.txt,.csv" hidden>
-    <input id="dxfFile" type="file" accept=".dxf" hidden>
+<input id="sdrFile" type="file" accept=".sdr,.SDR,.txt,.csv,text/plain" hidden>
+<input id="dxfFile" type="file" accept=".dxf,.DXF,text/plain" hidden>
 
-    <div id="status" class="status">
-      لم يتم تحميل أي ملفات بعد.
-    </div>
-  </div>
+<div id="status" class="status">لم يتم تحميل ملفات بعد.</div>
+<p class="small">SDR: يتم استخراج رقم النقطة و X/Y/Z من البيانات النصية حسب الصيغة المتاحة.</p>
+</div>
 
-  <div class="card">
-    <h2>🔧 ضبط المطابقة</h2>
+<div id="points" class="panel">
+<h2>إدارة النقاط</h2>
 
-    <div class="row">
-      <div>
-        <label>ΔX</label>
-        <input id="dx" type="number" value="0" step="0.001">
-      </div>
+<div class="row">
+<div><label>Point Number</label><input id="pName" placeholder="1"></div>
+<div><label>X</label><input id="pX" type="number" step="0.001"></div>
+<div><label>Y</label><input id="pY" type="number" step="0.001"></div>
+<div><label>Z</label><input id="pZ" type="number" step="0.001"></div>
+</div>
 
-      <div>
-        <label>ΔY</label>
-        <input id="dy" type="number" value="0" step="0.001">
-      </div>
+<div class="buttons">
+<button class="success" onclick="savePoint()">حفظ / إضافة</button>
+<button class="secondary" onclick="clearForm()">جديد</button>
+<button class="danger" onclick="deleteSelected()">حذف المحدد</button>
+<button class="secondary" onclick="renumber()">ترقيم تلقائي</button>
+</div>
 
-      <div>
-        <label>Scale</label>
-        <input id="scale" type="number" value="1" step="0.000001">
-      </div>
+<div style="margin-top:10px">
+<label>بحث في النقاط</label>
+<input id="search" placeholder="ابحث برقم النقطة أو الإحداثيات..." oninput="renderTable()">
+</div>
 
-      <div>
-        <label>Rotation</label>
-        <input id="rotation" type="number" value="0" step="0.001">
-      </div>
-    </div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>#</th><th>Point</th><th>X</th><th>Y</th><th>Z</th><th>المصدر</th><th>إجراء</th></tr>
+</thead>
+<tbody id="pointTable"></tbody>
+</table>
+</div>
+</div>
 
-    <button class="primary" onclick="applyTransform()">
-      تطبيق المطابقة
-    </button>
+<div id="tools" class="panel">
+<h2>أدوات المساحة</h2>
 
-    <button class="secondary" onclick="fitAll()">
-      Fit All
-    </button>
+<div class="row">
+<div><label>النقطة A</label><select id="toolA"></select></div>
+<div><label>النقطة B</label><select id="toolB"></select></div>
+<div><label>النقطة C</label><select id="toolC"></select></div>
+<div><label>Scale</label><input id="toolScale" type="number" value="1" step="0.000001"></div>
+</div>
 
-    <button class="secondary" onclick="clearAll()">
-      مسح
-    </button>
-  </div>
+<div class="buttons">
+<button class="primary" onclick="calcDistance()">المسافة</button>
+<button class="primary" onclick="calcBearing()">Azimuth / Bearing</button>
+<button class="primary" onclick="calcDelta()">ΔX / ΔY / ΔZ</button>
+<button class="primary" onclick="calcArea()">مساحة A-B-C</button>
+</div>
 
-  <div class="card">
-    <h2>🗺️ الخريطة</h2>
-    <canvas id="map"></canvas>
-  </div>
+<div id="toolResult" class="status">اختر النقاط ثم اختر الأداة.</div>
+</div>
 
-  <div class="card">
-    <h2>📊 البيانات</h2>
-    <div id="data"></div>
-  </div>
+</div>
+
+<div class="card">
+<h2>🗺️ خريطة المساحة</h2>
+<div class="buttons">
+<button class="secondary" onclick="zoomIn()">＋ Zoom</button>
+<button class="secondary" onclick="zoomOut()">－ Zoom</button>
+<button class="secondary" onclick="fitAll()">Fit All</button>
+<button class="secondary" onclick="clearAll()">مسح الكل</button>
+</div>
+<canvas id="map"></canvas>
+</div>
+
+<div class="card">
+<h2>📊 ملخص المشروع</h2>
+<div class="stat">
+<div><b id="countPoints">0</b><span class="small">النقاط</span></div>
+<div><b id="countDxf">0</b><span class="small">عناصر DXF</span></div>
+<div><b id="minZ">-</b><span class="small">Min Z</span></div>
+<div><b id="maxZ">-</b><span class="small">Max Z</span></div>
+</div>
+</div>
 
 </div>
 
 <script>
+const canvas=document.getElementById("map");
+const ctx=canvas.getContext("2d");
 
-const canvas = document.getElementById("map");
-const ctx = canvas.getContext("2d");
+let points=[];
+let dxfEntities=[];
+let selectedIndex=-1;
 
-let sdrPoints = [];
-let dxfPoints = [];
+let view={scale:1,offsetX:0,offsetY:0};
 
-let view = {
-  scale: 1,
-  offsetX: 0,
-  offsetY: 0
+function tab(id,btn){
+document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+btn.classList.add("active");
+}
+
+document.getElementById("sdrFile").addEventListener("change",e=>{
+const file=e.target.files[0];
+if(!file)return;
+const r=new FileReader();
+r.onload=()=>parseSDR(String(r.result),file.name);
+r.readAsText(file);
+});
+
+document.getElementById("dxfFile").addEventListener("change",e=>{
+const file=e.target.files[0];
+if(!file)return;
+const r=new FileReader();
+r.onload=()=>parseDXF(String(r.result),file.name);
+r.readAsText(file);
+});
+
+function parseSDR(text,fileName){
+points=[];
+const lines=text.split(/\r?\n/);
+
+for(const line of lines){
+const s=line.trim();
+if(!s)continue;
+
+const parts=s.split(/[,\s;]+/);
+const nums=parts.map(Number).filter(Number.isFinite);
+
+if(nums.length>=3){
+let name=parts[0]||String(points.length+1);
+let x,y,z=0;
+
+if(nums.length>=4){
+x=nums[nums.length-3];
+y=nums[nums.length-2];
+z=nums[nums.length-1];
+}else{
+x=nums[nums.length-2];
+y=nums[nums.length-1];
+}
+
+points.push({
+name:String(name),
+x:Number(x),
+y:Number(y),
+z:Number(z),
+source:"SDR"
+});
+}
+}
+
+document.getElementById("status").innerText=
+"تم تحميل SDR: "+fileName+" — "+points.length+" نقطة";
+
+selectedIndex=-1;
+renderAll();
+fitAll();
+}
+
+function parseDXF(text,fileName){
+dxfEntities=[];
+const lines=text.split(/\r?\n/).map(x=>x.trim());
+
+for(let i=0;i<lines.length-1;i++){
+if(lines[i]==="10"){
+const x=Number(lines[i+1]);
+let y=null;
+
+for(let j=i+2;j<Math.min(i+30,lines.length-1);j++){
+if(lines[j]==="20"){
+y=Number(lines[j+1]);
+break;
+}
+}
+
+if(Number.isFinite(x)&&Number.isFinite(y)){
+dxfEntities.push({type:"point",x,y});
+}
+}
+}
+
+document.getElementById("status").innerText=
+"تم تحميل DXF: "+fileName+" — "+dxfEntities.length+" عنصر إحداثي";
+
+renderAll();
+fitAll();
+}
+
+function savePoint(){
+const name=document.getElementById("pName").value.trim();
+const x=Number(document.getElementById("pX").value);
+const y=Number(document.getElementById("pY").value);
+const z=Number(document.getElementById("pZ").value)||0;
+
+if(!name||!Number.isFinite(x)||!Number.isFinite(y)){
+alert("أدخل Point Number و X و Y بشكل صحيح");
+return;
+}
+
+const p={name,x,y,z,source:"Manual"};
+
+if(selectedIndex>=0&&selectedIndex<points.length){
+points[selectedIndex]=p;
+}else{
+points.push(p);
+}
+
+selectedIndex=-1;
+clearForm();
+renderAll();
+fitAll();
+}
+
+function editPoint(i){
+selectedIndex=i;
+const p=points[i];
+document.getElementById("pName").value=p.name;
+document.getElementById("pX").value=p.x;
+document.getElementById("pY").value=p.y;
+document.getElementById("pZ").value=p.z;
+tab("points",document.querySelectorAll(".tab")[1]);
+draw();
+}
+
+function deleteSelected(){
+if(selectedIndex<0){
+alert("حدد نقطة أولاً");
+return;
+}
+if(!confirm("حذف النقطة المحددة؟"))return;
+points.splice(selectedIndex,1);
+selectedIndex=-1;
+clearForm();
+renderAll();
+fitAll();
+}
+
+function clearForm(){
+document.getElementById("pName").value="";
+document.getElementById("pX").value="";
+document.getElementById("pY").value="";
+document.getElementById("pZ").value="";
+selectedIndex=-1;
+}
+
+function renumber(){
+points.forEach((p,i)=>p.name=String(i+1));
+renderAll();
+draw();
+}
+
+function renderTable(){
+const q=document.getElementById("search").value.toLowerCase();
+const tbody=document.getElementById("pointTable");
+
+tbody.innerHTML="";
+
+points.forEach((p,i)=>{
+const text=(p.name+" "+p.x+" "+p.y+" "+p.z).toLowerCase();
+if(q&&!text.includes(q))return;
+
+const tr=document.createElement("tr");
+
+tr.innerHTML=
+"<td>"+(i+1)+"</td>"+
+"<td>"+escapeHtml(p.name)+"</td>"+
+"<td>"+format(p.x)+"</td>"+
+"<td>"+format(p.y)+"</td>"+
+"<td>"+format(p.z)+"</td>"+
+"<td>"+p.source+"</td>"+
+"<td><button onclick=\"editPoint("+i+")\">تعديل</button></td>";
+
+if(i===selectedIndex)tr.style.background="#dbeafe";
+
+tbody.appendChild(tr);
+});
+}
+
+function escapeHtml(s){
+return String(s).replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",
+'"':"&quot;","'":"&#039;"
+}[c]));
+}
+
+function format(n){
+return Number.isFinite(Number(n))?Number(n).toFixed(3):"-";
+}
+
+function updateStats(){
+document.getElementById("countPoints").innerText=points.length;
+document.getElementById("countDxf").innerText=dxfEntities.length;
+
+if(points.length){
+const zs=points.map(p=>p.z);
+document.getElementById("minZ").innerText=format(Math.min(...zs));
+document.getElementById("maxZ").innerText=format(Math.max(...zs));
+}else{
+document.getElementById("minZ").innerText="-";
+document.getElementById("maxZ").innerText="-";
+}
+}
+
+function updateSelects(){
+const ids=["toolA","toolB","toolC"];
+ids.forEach(id=>{
+const s=document.getElementById(id);
+const old=s.value;
+s.innerHTML="";
+points.forEach((p,i)=>{
+const o=document.createElement("option");
+o.value=i;
+o.textContent=p.name+" ("+format(p.x)+", "+format(p.y)+")";
+s.appendChild(o);
+});
+if(old&&points[old])s.value=old;
+});
+}
+
+function renderAll(){
+renderTable();
+updateStats();
+updateSelects();
+draw();
+}
+
+function worldToScreen(p){
+return{
+x:p.x*view.scale+view.offsetX,
+y:-p.y*view.scale+view.offsetY
 };
+}
 
-document.getElementById("sdrFile").addEventListener("change", function(e) {
-  const file = e.target.files[0];
+function screenToWorld(x,y){
+return{
+x:(x-view.offsetX)/view.scale,
+y:-(y-view.offsetY)/view.scale
+};
+}
 
-  if (!file) return;
+function drawGrid(){
+const step=niceGridStep();
+const min=screenToWorld(0,canvas.height);
+const max=screenToWorld(canvas.width,0);
 
-  const reader = new FileReader();
+ctx.font="10px Arial";
 
-  reader.onload = function() {
-    parseSDR(reader.result);
-    document.getElementById("status").innerText =
-      "تم تحميل ملف SDR: " + file.name;
+for(let x=Math.floor(min.x/step)*step;x<=max.x;x+=step){
+const a=worldToScreen({x,y:min.y});
+const b=worldToScreen({x,y:max.y});
+ctx.beginPath();
+ctx.moveTo(a.x,a.y);
+ctx.lineTo(b.x,b.y);
+ctx.strokeStyle="#e2e8f0";
+ctx.stroke();
+if(Math.abs(x)>step/1000)ctx.fillText(formatGrid(x),a.x+3,canvas.height-4);
+}
 
-    fitAll();
-  };
+for(let y=Math.floor(min.y/step)*step;y<=max.y;y+=step){
+const a=worldToScreen({x:min.x,y});
+const b=worldToScreen({x:max.x,y});
+ctx.beginPath();
+ctx.moveTo(a.x,a.y);
+ctx.lineTo(b.x,b.y);
+ctx.strokeStyle="#e2e8f0";
+ctx.stroke();
+if(Math.abs(y)>step/1000)ctx.fillText(formatGrid(y),4,b.y-3);
+}
+}
 
-  reader.readAsText(file);
+function niceGridStep(){
+const target=70/view.scale;
+const p=Math.pow(10,Math.floor(Math.log10(target)));
+const n=target/p;
+return (n<2?1:n<5?2:5)*p;
+}
+
+function formatGrid(n){
+if(Math.abs(n)>=1000)return (n/1000).toFixed(1)+"k";
+return Number(n).toFixed(n%1?1:0);
+}
+
+function draw(){
+canvas.width=canvas.clientWidth;
+canvas.height=canvas.clientHeight;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#ffffff";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+drawGrid();
+
+ctx.strokeStyle="#94a3b8";
+ctx.beginPath();
+ctx.moveTo(0,view.offsetY);
+ctx.lineTo(canvas.width,view.offsetY);
+ctx.moveTo(view.offsetX,0);
+ctx.lineTo(view.offsetX,canvas.height);
+ctx.stroke();
+
+dxfEntities.forEach(e=>{
+const s=worldToScreen(e);
+ctx.beginPath();
+ctx.arc(s.x,s.y,3,0,Math.PI*2);
+ctx.fillStyle="#64748b";
+ctx.fill();
 });
 
-document.getElementById("dxfFile").addEventListener("change", function(e) {
-  const file = e.target.files[0];
+points.forEach((p,i)=>{
+const s=worldToScreen(p);
+ctx.beginPath();
+ctx.arc(s.x,s.y,i===selectedIndex?7:5,0,Math.PI*2);
+ctx.fillStyle=i===selectedIndex?"#dc2626":"#2563eb";
+ctx.fill();
 
-  if (!file) return;
+ctx.font="12px Arial";
+ctx.fillStyle="#111827";
+ctx.fillText(p.name,s.x+7,s.y-7);
+});
+}
 
-  const reader = new FileReader();
+function fitAll(){
+const all=[
+...points,
+...dxfEntities
+];
 
-  reader.onload = function() {
-    parseDXF(reader.result);
-    document.getElementById("status").innerText =
-      "تم تحميل ملف DXF: " + file.name;
+if(!all.length){
+view.scale=1;
+view.offsetX=canvas.width/2;
+view.offsetY=canvas.height/2;
+draw();
+return;
+}
 
-    fitAll();
-  };
+let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
 
-  reader.readAsText(file);
+all.forEach(p=>{
+minX=Math.min(minX,p.x);
+maxX=Math.max(maxX,p.x);
+minY=Math.min(minY,p.y);
+maxY=Math.max(maxY,p.y);
 });
 
-function parseSDR(text) {
+const w=Math.max(maxX-minX,1);
+const h=Math.max(maxY-minY,1);
 
-  sdrPoints = [];
+view.scale=Math.min(canvas.width/w,canvas.height/h)*0.8;
 
-  const lines = text.split(/\r?\n/);
-
-  for (const line of lines) {
-
-    const parts = line.trim().split(/[,\s;]+/);
-
-    const nums = parts
-      .map(Number)
-      .filter(v => Number.isFinite(v));
-
-    if (nums.length >= 3) {
-
-      const x = nums[nums.length - 2];
-      const y = nums[nums.length - 1];
-
-      sdrPoints.push({
-        x: x,
-        y: y,
-        name: parts[0]
-      });
-    }
-  }
-
-  showData();
-  draw();
-}
-
-function parseDXF(text) {
-
-  dxfPoints = [];
-
-  const lines = text.split(/\r?\n/);
-
-  for (let i = 0; i < lines.length - 1; i++) {
-
-    if (lines[i].trim() === "10") {
-
-      const x = Number(lines[i + 1]);
-
-      let y = null;
-
-      for (let j = i + 2; j < Math.min(i + 20, lines.length - 1); j++) {
-
-        if (lines[j].trim() === "20") {
-          y = Number(lines[j + 1]);
-          break;
-        }
-      }
-
-      if (
-        Number.isFinite(x) &&
-        Number.isFinite(y)
-      ) {
-
-        dxfPoints.push({
-          x: x,
-          y: y
-        });
-      }
-    }
-  }
-
-  showData();
-  draw();
-}
-
-function transformPoint(p) {
-
-  const dx = Number(document.getElementById("dx").value) || 0;
-  const dy = Number(document.getElementById("dy").value) || 0;
-  const scale = Number(document.getElementById("scale").value) || 1;
-
-  const angle =
-    (Number(document.getElementById("rotation").value) || 0)
-    * Math.PI / 180;
-
-  let x = p.x * scale;
-  let y = p.y * scale;
-
-  const rx = x * Math.cos(angle) - y * Math.sin(angle);
-  const ry = x * Math.sin(angle) + y * Math.cos(angle);
-
-  return {
-    x: rx + dx,
-    y: ry + dy
-  };
-}
-
-function applyTransform() {
-  draw();
-}
-
-function fitAll() {
-
-  const all = [
-    ...sdrPoints,
-    ...dxfPoints.map(transformPoint)
-  ];
-
-  if (!all.length) return;
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-
-  all.forEach(p => {
-
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-
-  });
-
-  const width = maxX - minX || 1;
-  const height = maxY - minY || 1;
-
-  view.scale =
-    Math.min(
-      canvas.width / width,
-      canvas.height / height
-    ) * 0.85;
-
-  view.offsetX =
-    canvas.width / 2 - ((minX + maxX) / 2) * view.scale;
-
-  view.offsetY =
-    canvas.height / 2 + ((minY + maxY) / 2) * view.scale;
-
-  draw();
-}
-
-function worldToScreen(p) {
-
-  return {
-    x: p.x * view.scale + view.offsetX,
-    y: -p.y * view.scale + view.offsetY
-  };
-}
-
-function drawPoint(p, text) {
-
-  const s = worldToScreen(p);
-
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (text) {
-    ctx.font = "11px Arial";
-    ctx.fillText(text, s.x + 6, s.y - 6);
-  }
-}
-
-function draw() {
-
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  sdrPoints.forEach(p => {
-    drawPoint(p, p.name);
-  });
-
-  dxfPoints.forEach(p => {
-    drawPoint(transformPoint(p), "");
-  });
-}
-
-function showData() {
-
-  const data = document.getElementById("data");
-
-  data.innerHTML =
-    "<b>SDR Points:</b> " + sdrPoints.length +
-    "<br><b>DXF Points:</b> " + dxfPoints.length;
-}
-
-function clearAll() {
-
-  sdrPoints = [];
-  dxfPoints = [];
-
-  document.getElementById("data").innerHTML = "";
-  document.getElementById("status").innerText =
-    "تم مسح البيانات.";
-
-  draw();
-}
-
-window.addEventListener("resize", draw);
+view.offsetX=canvas.width/2-((minX+maxX)/2)*view.scale;
+view.offsetY=canvas.height/2+((minY+maxY)/2)*view.scale;
 
 draw();
+}
 
+function zoomIn(){
+view.scale*=1.25;
+draw();
+}
+
+function zoomOut(){
+view.scale/=1.25;
+draw();
+}
+
+function clearAll(){
+if(!confirm("مسح جميع البيانات؟"))return;
+points=[];
+dxfEntities=[];
+selectedIndex=-1;
+clearForm();
+document.getElementById("status").innerText="تم مسح البيانات.";
+renderAll();
+fitAll();
+}
+
+function getPoint(id){
+const i=Number(document.getElementById(id).value);
+return points[i];
+}
+
+function calcDistance(){
+const a=getPoint("toolA"),b=getPoint("toolB");
+if(!a||!b)return;
+const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;
+const d=Math.hypot(dx,dy);
+document.getElementById("toolResult").innerHTML=
+"<b>Horizontal Distance:</b> "+format(d)+
+"<br><b>3D Distance:</b> "+format(Math.hypot(dx,dy,dz));
+}
+
+function calcBearing(){
+const a=getPoint("toolA"),b=getPoint("toolB");
+if(!a||!b)return;
+let az=Math.atan2(b.x-a.x,b.y-a.y)*180/Math.PI;
+if(az<0)az+=360;
+document.getElementById("toolResult").innerHTML=
+"<b>Azimuth:</b> "+az.toFixed(4)+"°";
+}
+
+function calcDelta(){
+const a=getPoint("toolA"),b=getPoint("toolB");
+if(!a||!b)return;
+document.getElementById("toolResult").innerHTML=
+"<b>ΔX:</b> "+format(b.x-a.x)+
+"<br><b>ΔY:</b> "+format(b.y-a.y)+
+"<br><b>ΔZ:</b> "+format(b.z-a.z);
+}
+
+function calcArea(){
+const a=getPoint("toolA"),b=getPoint("toolB"),c=getPoint("toolC");
+if(!a||!b||!c)return;
+
+const area=Math.abs(
+a.x*(b.y-c.y)+
+b.x*(c.y-a.y)+
+c.x*(a.y-b.y)
+)/2;
+
+document.getElementById("toolResult").innerHTML=
+"<b>Area:</b> "+format(area)+" m²";
+}
+
+function exportPoints(){
+if(!points.length){
+alert("لا توجد نقاط للتصدير");
+return;
+}
+
+let csv="Point,X,Y,Z,Source\n";
+
+points.forEach(p=>{
+csv+=
+JSON.stringify(p.name)+","+
+p.x+","+p.y+","+p.z+","+p.source+"\n";
+});
+
+const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Mahmoud-Zarzoura-Points.csv";
+a.click();
+URL.revokeObjectURL(a.href);
+}
+
+let dragging=false,lastX=0,lastY=0;
+
+canvas.addEventListener("pointerdown",e=>{
+dragging=true;
+lastX=e.clientX;
+lastY=e.clientY;
+canvas.setPointerCapture(e.pointerId);
+});
+
+canvas.addEventListener("pointermove",e=>{
+if(!dragging)return;
+view.offsetX+=e.clientX-lastX;
+view.offsetY+=e.clientY-lastY;
+lastX=e.clientX;
+lastY=e.clientY;
+draw();
+});
+
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+
+canvas.addEventListener("wheel",e=>{
+e.preventDefault();
+view.scale*=e.deltaY<0?1.1:0.9;
+draw();
+},{passive:false});
+
+canvas.addEventListener("dblclick",e=>{
+const r=canvas.getBoundingClientRect();
+const w=screenToWorld(e.clientX-r.left,e.clientY-r.top);
+
+let nearest=-1,best=Infinity;
+
+points.forEach((p,i)=>{
+const s=worldToScreen(p);
+const d=Math.hypot(s.x-(e.clientX-r.left),s.y-(e.clientY-r.top));
+if(d<best&&d<20){best=d;nearest=i;}
+});
+
+if(nearest>=0)editPoint(nearest);
+});
+
+window.addEventListener("resize",()=>{
+draw();
+});
+
+renderAll();
+fitAll();
 </script>
-
 </body>
 </html>
