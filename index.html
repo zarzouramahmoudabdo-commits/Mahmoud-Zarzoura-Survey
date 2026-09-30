@@ -69,6 +69,7 @@ th{background:#f8fafc;position:sticky;top:0}
 <button class="primary" onclick="document.getElementById('sdrFile').click()">اختيار SDR</button>
 <button class="primary" onclick="document.getElementById('dxfFile').click()">اختيار DXF</button>
 <button class="secondary" onclick="exportPoints()">تصدير النقاط</button>
+<button class="success" onclick="openMatch()">🔗 مطابقة SDR مع DXF</button>
 <button class="secondary" onclick="fitAll()">Fit All</button>
 </div>
 
@@ -77,6 +78,56 @@ th{background:#f8fafc;position:sticky;top:0}
 
 <div id="status" class="status">لم يتم تحميل ملفات بعد.</div>
 <p class="small">SDR: يتم استخراج رقم النقطة و X/Y/Z من البيانات النصية حسب الصيغة المتاحة.</p>
+
+<div id="matchPanel" style="display:none;margin-top:12px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc">
+<h2>🔗 مطابقة SDR مع DXF</h2>
+<p class="small">
+اختر نقطتين أو ثلاث نقاط مشتركة بين SDR وDXF لحساب الإزاحة والدوران والـScale.
+</p>
+
+<div class="row">
+<div>
+<label>SDR Point 1</label>
+<select id="matchSdr1"></select>
+</div>
+<div>
+<label>DXF Point 1</label>
+<select id="matchDxf1"></select>
+</div>
+<div>
+<label>SDR Point 2</label>
+<select id="matchSdr2"></select>
+</div>
+<div>
+<label>DXF Point 2</label>
+<select id="matchDxf2"></select>
+</div>
+</div>
+
+<div class="row" style="margin-top:8px">
+<div>
+<label>SDR Point 3</label>
+<select id="matchSdr3"></select>
+</div>
+<div>
+<label>DXF Point 3</label>
+<select id="matchDxf3"></select>
+</div>
+<div></div>
+<div></div>
+</div>
+
+<div class="buttons">
+<button class="primary" onclick="calculateMatch()">حساب المطابقة</button>
+<button class="success" onclick="applyMatch()">تطبيق المطابقة</button>
+<button class="secondary" onclick="closeMatch()">إغلاق</button>
+<button class="secondary" onclick="fitAll()">Fit All</button>
+</div>
+
+<div id="matchResult" class="status">
+اختر النقاط المشتركة ثم اضغط «حساب المطابقة».
+</div>
+</div>
 </div>
 
 <div id="points" class="panel">
@@ -141,7 +192,17 @@ th{background:#f8fafc;position:sticky;top:0}
 <button class="secondary" onclick="fitAll()">Fit All</button>
 <button class="secondary" onclick="clearAll()">مسح الكل</button>
 </div>
+<div style="position:relative">
 <canvas id="map"></canvas>
+<div id="mapInfo" style="position:absolute;left:10px;bottom:10px;background:#0f172acc;color:white;padding:8px 10px;border-radius:8px;font-size:12px;pointer-events:none">
+X: - | Y: -
+</div>
+<div style="position:absolute;right:10px;top:10px;background:#ffffffdd;border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:11px;pointer-events:none">
+<span style="color:#2563eb">●</span> SDR
+&nbsp;&nbsp;
+<span style="color:#64748b">●</span> DXF
+</div>
+</div>
 </div>
 
 <div class="card">
@@ -191,46 +252,74 @@ r.readAsText(file);
 
 function parseSDR(text,fileName){
 points=[];
-const lines=text.split(/\r?\n/);
 
-for(const line of lines){
-const s=line.trim();
-if(!s)continue;
+const lines=text.replace(/\r/g,"").split("\n");
 
-const parts=s.split(/[,\s;]+/);
-const nums=parts.map(Number).filter(Number.isFinite);
+function addPoint(name,x,y,z=0){
+  if(!Number.isFinite(x) || !Number.isFinite(y)) return;
 
-if(nums.length>=3){
-let name=parts[0]||String(points.length+1);
-let x,y,z=0;
-
-if(nums.length>=4){
-x=nums[nums.length-3];
-y=nums[nums.length-2];
-z=nums[nums.length-1];
-}else{
-x=nums[nums.length-2];
-y=nums[nums.length-1];
+  points.push({
+    name:String(name || points.length+1),
+    x:Number(x),
+    y:Number(y),
+    z:Number.isFinite(z) ? Number(z) : 0,
+    source:"SDR"
+  });
 }
 
-points.push({
-name:String(name),
-x:Number(x),
-y:Number(y),
-z:Number(z),
-source:"SDR"
-});
-}
+for(const raw of lines){
+  const line=raw.trim();
+  if(!line) continue;
+
+  // SDR33 / Sokkia style point record.
+  // Example:
+  // 08TP 59635192.511 3439220.431 5.903
+  if(/^08TP/i.test(line)){
+    const body=line.replace(/^08TP/i,"").trim();
+    const nums=body.match(/[-+]?\d+(?:\.\d+)?/g);
+
+    if(nums && nums.length>=3){
+      const values=nums.map(Number);
+
+      // In SDR33 TP records the three values are X, Y, Z.
+      addPoint(points.length+1,values[0],values[1],values[2]);
+      continue;
+    }
+  }
+
+  // Generic exported point rows:
+  // Point,X,Y,Z
+  // Point X Y Z
+  // Point;X;Y;Z
+  const parts=line.split(/[,\s;]+/).filter(Boolean);
+
+  if(parts.length>=4){
+    const nums=parts.slice(1).map(Number);
+
+    if(nums.length>=3 && nums.every(Number.isFinite)){
+      addPoint(parts[0],nums[0],nums[1],nums[2]);
+      continue;
+    }
+  }
+
+  // Generic numeric row:
+  // X Y Z
+  if(parts.length>=3){
+    const nums=parts.map(Number);
+
+    if(nums.length===3 && nums.every(Number.isFinite)){
+      addPoint(points.length+1,nums[0],nums[1],nums[2]);
+    }
+  }
 }
 
 document.getElementById("status").innerText=
-"تم تحميل SDR: "+fileName+" — "+points.length+" نقطة";
+  "تم تحميل SDR: "+fileName+" — "+points.length+" نقطة";
 
 selectedIndex=-1;
 renderAll();
 fitAll();
 }
-
 function parseDXF(text,fileName){
 dxfEntities=[];
 const lines=text.split(/\r?\n/).map(x=>x.trim());
@@ -258,6 +347,147 @@ document.getElementById("status").innerText=
 
 renderAll();
 fitAll();
+}
+
+
+let matchTransform=null;
+
+function openMatch(){
+  const panel=document.getElementById("matchPanel");
+  panel.style.display="block";
+  updateMatchSelects();
+}
+
+function closeMatch(){
+  document.getElementById("matchPanel").style.display="none";
+}
+
+function updateMatchSelects(){
+  ["matchSdr1","matchSdr2","matchSdr3"].forEach(id=>{
+    const s=document.getElementById(id);
+    const old=s.value;
+    s.innerHTML="";
+    points.forEach((p,i)=>{
+      const o=document.createElement("option");
+      o.value=i;
+      o.textContent=p.name+" ("+format(p.x)+", "+format(p.y)+")";
+      s.appendChild(o);
+    });
+    if(old && points[old]) s.value=old;
+  });
+
+  ["matchDxf1","matchDxf2","matchDxf3"].forEach(id=>{
+    const s=document.getElementById(id);
+    const old=s.value;
+    s.innerHTML="";
+    dxfEntities.forEach((p,i)=>{
+      const o=document.createElement("option");
+      o.value=i;
+      o.textContent="DXF "+(i+1)+" ("+format(p.x)+", "+format(p.y)+")";
+      s.appendChild(o);
+    });
+    if(old && dxfEntities[old]) s.value=old;
+  });
+}
+
+function calculateMatch(){
+  if(points.length<2 || dxfEntities.length<2){
+    alert("يجب تحميل SDR وDXF وأن يحتوي كل منهما على نقطتين على الأقل.");
+    return;
+  }
+
+  const s1=points[Number(document.getElementById("matchSdr1").value)];
+  const s2=points[Number(document.getElementById("matchSdr2").value)];
+  const d1=dxfEntities[Number(document.getElementById("matchDxf1").value)];
+  const d2=dxfEntities[Number(document.getElementById("matchDxf2").value)];
+
+  if(!s1||!s2||!d1||!d2){
+    alert("اختر نقطتي SDR ونقطتي DXF.");
+    return;
+  }
+
+  const svx=s2.x-s1.x;
+  const svy=s2.y-s1.y;
+  const dvx=d2.x-d1.x;
+  const dvy=d2.y-d1.y;
+
+  const sDist=Math.hypot(svx,svy);
+  const dDist=Math.hypot(dvx,dvy);
+
+  if(sDist===0 || dDist===0){
+    alert("لا يمكن المطابقة إذا كانت النقطتان متطابقتين.");
+    return;
+  }
+
+  const scale=dDist/sDist;
+
+  const sAng=Math.atan2(svy,svx);
+  const dAng=Math.atan2(dvy,dvx);
+  const rotation=dAng-sAng;
+
+  const cos=Math.cos(rotation);
+  const sin=Math.sin(rotation);
+
+  const tx=d1.x-scale*(cos*s1.x-sin*s1.y);
+  const ty=d1.y-scale*(sin*s1.x+cos*s1.y);
+
+  matchTransform={scale,rotation,tx,ty};
+
+  let html=
+    "<b>Scale:</b> "+scale.toFixed(8)+
+    "<br><b>Rotation:</b> "+(rotation*180/Math.PI).toFixed(6)+"°"+
+    "<br><b>ΔX:</b> "+tx.toFixed(3)+
+    "<br><b>ΔY:</b> "+ty.toFixed(3);
+
+  const s3=document.getElementById("matchSdr3").value;
+  const d3=document.getElementById("matchDxf3").value;
+
+  if(s3!=="" && d3!==""){
+    const a=points[Number(s3)];
+    const b=dxfEntities[Number(d3)];
+
+    const px=scale*(cos*a.x-sin*a.y)+tx;
+    const py=scale*(sin*a.x+cos*a.y)+ty;
+
+    const err=Math.hypot(px-b.x,py-b.y);
+
+    html+="<br><b>Check Point Error:</b> "+err.toFixed(4)+" m";
+  }
+
+  document.getElementById("matchResult").innerHTML=html;
+}
+
+function applyMatch(){
+  if(!matchTransform){
+    alert("اضغط «حساب المطابقة» أولاً.");
+    return;
+  }
+
+  const t=matchTransform;
+
+  points=points.map(p=>{
+    const x=t.scale*(Math.cos(t.rotation)*p.x-Math.sin(t.rotation)*p.y)+t.tx;
+    const y=t.scale*(Math.sin(t.rotation)*p.x+Math.cos(t.rotation)*p.y)+t.ty;
+
+    return {
+      ...p,
+      x,
+      y,
+      source:p.source==="SDR" ? "SDR-Matched" : p.source
+    };
+  });
+
+  matchTransform=null;
+
+  document.getElementById("status").innerText=
+    "تم تطبيق مطابقة SDR مع DXF على جميع نقاط SDR.";
+
+  renderAll();
+  fitAll();
+  updateMatchSelects();
+
+  document.getElementById("matchResult").innerHTML=
+    "<b>تم تطبيق المطابقة بنجاح.</b>";
 }
 
 function savePoint(){
@@ -464,6 +694,20 @@ ctx.fillRect(0,0,canvas.width,canvas.height);
 
 drawGrid();
 
+ctx.save();
+ctx.strokeStyle="#94a3b8";
+ctx.lineWidth=1;
+ctx.setLineDash([5,5]);
+
+ctx.beginPath();
+ctx.moveTo(canvas.width/2,0);
+ctx.lineTo(canvas.width/2,canvas.height);
+ctx.moveTo(0,canvas.height/2);
+ctx.lineTo(canvas.width,canvas.height/2);
+ctx.stroke();
+
+ctx.restore();
+
 ctx.strokeStyle="#94a3b8";
 ctx.beginPath();
 ctx.moveTo(0,view.offsetY);
@@ -472,25 +716,48 @@ ctx.moveTo(view.offsetX,0);
 ctx.lineTo(view.offsetX,canvas.height);
 ctx.stroke();
 
-dxfEntities.forEach(e=>{
+dxfEntities.forEach((e,i)=>{
 const s=worldToScreen(e);
+
 ctx.beginPath();
-ctx.arc(s.x,s.y,3,0,Math.PI*2);
+ctx.arc(s.x,s.y,3.5,0,Math.PI*2);
 ctx.fillStyle="#64748b";
 ctx.fill();
+
+if(view.scale>0.02){
+ctx.font="10px Arial";
+ctx.fillStyle="#475569";
+ctx.fillText("DXF "+(i+1),s.x+5,s.y+12);
+}
 });
 
 points.forEach((p,i)=>{
 const s=worldToScreen(p);
+const selected=i===selectedIndex;
+
+if(selected){
 ctx.beginPath();
-ctx.arc(s.x,s.y,i===selectedIndex?7:5,0,Math.PI*2);
-ctx.fillStyle=i===selectedIndex?"#dc2626":"#2563eb";
+ctx.arc(s.x,s.y,11,0,Math.PI*2);
+ctx.strokeStyle="#dc2626";
+ctx.lineWidth=2;
+ctx.stroke();
+}
+
+ctx.beginPath();
+ctx.arc(s.x,s.y,selected?7:5,0,Math.PI*2);
+ctx.fillStyle=selected?"#dc2626":"#2563eb";
 ctx.fill();
 
-ctx.font="12px Arial";
+ctx.font=selected?"bold 13px Arial":"12px Arial";
 ctx.fillStyle="#111827";
-ctx.fillText(p.name,s.x+7,s.y-7);
+ctx.fillText(p.name,s.x+8,s.y-8);
 });
+
+const info=document.getElementById("mapInfo");
+if(info && canvas._lastWorld){
+info.textContent=
+"X: "+format(canvas._lastWorld.x)+" | Y: "+format(canvas._lastWorld.y);
+}
 }
 
 function fitAll(){
@@ -627,7 +894,17 @@ canvas.setPointerCapture(e.pointerId);
 });
 
 canvas.addEventListener("pointermove",e=>{
-if(!dragging)return;
+const r=canvas.getBoundingClientRect();
+canvas._lastWorld=screenToWorld(
+e.clientX-r.left,
+e.clientY-r.top
+);
+
+if(!dragging){
+draw();
+return;
+}
+
 view.offsetX+=e.clientX-lastX;
 view.offsetY+=e.clientY-lastY;
 lastX=e.clientX;
@@ -665,6 +942,36 @@ draw();
 
 renderAll();
 fitAll();
+function mapPickPoint(e){
+const r=canvas.getBoundingClientRect();
+const mx=e.clientX-r.left;
+const my=e.clientY-r.top;
+let best=null,bestDist=18;
+points.forEach((p,i)=>{
+const q=worldToScreen(p);
+const d=Math.hypot(q.x-mx,q.y-my);
+if(d<bestDist){bestDist=d;best={type:"SDR",index:i,point:p};}
+});
+dxfEntities.forEach((p,i)=>{
+const q=worldToScreen(p);
+const d=Math.hypot(q.x-mx,q.y-my);
+if(d<bestDist){bestDist=d;best={type:"DXF",index:i,point:p};}
+});
+if(!best)return;
+if(best.type==="SDR"){
+selectedIndex=best.index;
+const p=best.point;
+document.getElementById("mapInfo").textContent="SDR | Point: "+p.name+" | X: "+format(p.x)+" | Y: "+format(p.y)+" | Z: "+format(p.z);
+renderTable();updateSelects();draw();
+}else{
+selectedIndex=-1;
+const p=best.point;
+document.getElementById("mapInfo").textContent="DXF "+(best.index+1)+" | X: "+format(p.x)+" | Y: "+format(p.y);
+renderTable();draw();
+}
+}
+canvas.addEventListener("click",mapPickPoint);
+
 </script>
 </body>
 </html>
